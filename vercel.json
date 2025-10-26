@@ -12,10 +12,6 @@
       "dest": "server.js"
     }
   ],
-  "env": {
-    "NODE_ENV": "production",
-    "BCRYPT_ROUNDS": "12"
-  },
   "functions": {
     "server.js": {
       "maxDuration": 10
