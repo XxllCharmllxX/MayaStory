@@ -24,6 +24,15 @@ async function testConnection() {
 
     if (tableCheck.rows[0].exists) {
       console.log('✅ Accounts table exists!');
+
+      // Check if username "Sora" exists
+      const userCheck = await pool.query('SELECT id FROM accounts WHERE name = $1', ['Sora']);
+      if (userCheck.rows.length > 0) {
+        console.log('✅ Username "Sora" exists in the accounts table!');
+        console.log('User ID:', userCheck.rows[0].id);
+      } else {
+        console.log('❌ Username "Sora" does not exist in the accounts table.');
+      }
     } else {
       console.log('❌ Accounts table does not exist. Run create_accounts_table.sql in Supabase.');
     }

@@ -19,7 +19,7 @@ const pool = new Pool({
 });
 
 // Test database connection
-pool.on('connect', () => {
+pool.on('connection', () => {
   console.log('Connected to database');
 });
 
@@ -37,12 +37,12 @@ app.post('/api/login', async (req, res) => {
     }
 
     // Get user from database
-    const result = await pool.query('SELECT id, password, banned FROM accounts WHERE name = $1', [username]);
-    if (result.rows.length === 0) {
+    const { rows } = await pool.query('SELECT id, password, banned FROM accounts WHERE name = $1', [username]);
+    if (rows.length === 0) {
       return res.status(401).json({ ok: false, error: 'Invalid username or password' });
     }
 
-    const user = result.rows[0];
+    const user = rows[0];
 
     // Check if banned
     if (user.banned === 1) {
@@ -81,8 +81,8 @@ app.post('/api/register', async (req, res) => {
     }
 
     // Check if username exists
-    const existingUser = await pool.query('SELECT id FROM accounts WHERE name = $1', [username]);
-    if (existingUser.rows.length > 0) {
+    const { rows: existingRows } = await pool.query('SELECT id FROM accounts WHERE name = $1', [username]);
+    if (existingRows.length > 0) {
       return res.status(409).json({ ok: false, error: 'Username already exists' });
     }
 
@@ -91,12 +91,12 @@ app.post('/api/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
     // Insert new account
-    const result = await pool.query(
-      'INSERT INTO accounts (name, password, email, birthday, gender, creation, banned, loggedin) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id',
-      [username, hashedPassword, email || null, '1990-01-01', 0, new Date(), 0, 0]
+    const { rows: resultRows } = await pool.query(
+      'INSERT INTO accounts (name, password, email, birthday, gender, creation, banned, loggedin, tos) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id',
+      [username, hashedPassword, email || null, '1990-01-01', 0, new Date(), 0, 0, 1]
     );
 
-    res.json({ ok: true, message: 'Account created successfully', accountId: result.rows[0].id });
+    res.json({ ok: true, message: 'Account created successfully', accountId: resultRows[0].id });
 
   } catch (error) {
     console.error('Registration error:', error);
@@ -121,8 +121,8 @@ app.get('/test-db', async (req, res) => {
       return res.status(500).json({ ok: false, error: 'DATABASE_URL environment variable not set' });
     }
 
-    const result = await pool.query('SELECT NOW() as current_time');
-    res.json({ ok: true, time: result.rows[0].current_time });
+    const { rows } = await pool.query('SELECT NOW() as current_time');
+    res.json({ ok: true, time: rows[0].current_time });
   } catch (error) {
     console.error('Database test error:', error);
     res.status(500).json({ ok: false, error: `Database test failed: ${error.message}` });
